@@ -7,11 +7,14 @@ Unit-тесты для конвертеров OpenAI <-> Kiro.
 
 import pytest
 
+from unittest.mock import patch
+
 from kiro_gateway.converters import (
     extract_text_content,
     merge_adjacent_messages,
     build_kiro_history,
     build_kiro_payload,
+    process_tools_with_long_descriptions,
     _extract_tool_results,
     _extract_tool_uses,
     _build_user_input_context
@@ -436,6 +439,285 @@ class TestExtractToolUses:
         assert result == []
 
 
+class TestProcessToolsWithLongDescriptions:
+    """Тесты функции process_tools_with_long_descriptions."""
+    
+    def test_returns_none_and_empty_string_for_none_tools(self):
+        """
+        Что он делает: Проверяет обработку None вместо списка tools.
+        Цель: Убедиться, что None возвращает (None, "").
+        """
+        print("Настройка: None вместо tools...")
+        
+        print("Действие: Обработка tools...")
+        processed, doc = process_tools_with_long_descriptions(None)
+        
+        print(f"Сравниваем результат: Ожидалось (None, ''), Получено ({processed}, '{doc}')")
+        assert processed is None
+        assert doc == ""
+    
+    def test_returns_none_and_empty_string_for_empty_list(self):
+        """
+        Что он делает: Проверяет обработку пустого списка tools.
+        Цель: Убедиться, что пустой список возвращает (None, "").
+        """
+        print("Настройка: Пустой список tools...")
+        
+        print("Действие: Обработка tools...")
+        processed, doc = process_tools_with_long_descriptions([])
+        
+        print(f"Сравниваем результат: Ожидалось (None, ''), Получено ({processed}, '{doc}')")
+        assert processed is None
+        assert doc == ""
+    
+    def test_short_description_unchanged(self):
+        """
+        Что он делает: Проверяет, что короткие descriptions не изменяются.
+        Цель: Убедиться, что tools с короткими descriptions остаются как есть.
+        """
+        print("Настройка: Tool с коротким description...")
+        tools = [Tool(
+            type="function",
+            function=ToolFunction(
+                name="get_weather",
+                description="Get weather for a location",
+                parameters={"type": "object", "properties": {}}
+            )
+        )]
+        
+        print("Действие: Обработка tools...")
+        with patch('kiro_gateway.converters.TOOL_DESCRIPTION_MAX_LENGTH', 10000):
+            processed, doc = process_tools_with_long_descriptions(tools)
+        
+        print(f"Сравниваем description: Ожидалось 'Get weather for a location', Получено '{processed[0].function.description}'")
+        assert len(processed) == 1
+        assert processed[0].function.description == "Get weather for a location"
+        assert doc == ""
+    
+    def test_long_description_moved_to_system_prompt(self):
+        """
+        Что он делает: Проверяет перенос длинного description в system prompt.
+        Цель: Убедиться, что длинные descriptions переносятся корректно.
+        """
+        print("Настройка: Tool с очень длинным description...")
+        long_description = "A" * 15000  # 15000 символов - больше лимита
+        tools = [Tool(
+            type="function",
+            function=ToolFunction(
+                name="bash",
+                description=long_description,
+                parameters={"type": "object", "properties": {"command": {"type": "string"}}}
+            )
+        )]
+        
+        print("Действие: Обработка tools с лимитом 10000...")
+        with patch('kiro_gateway.converters.TOOL_DESCRIPTION_MAX_LENGTH', 10000):
+            processed, doc = process_tools_with_long_descriptions(tools)
+        
+        print(f"Проверяем reference в description...")
+        assert len(processed) == 1
+        assert "[Full documentation in system prompt under '## Tool: bash']" in processed[0].function.description
+        
+        print(f"Проверяем документацию в system prompt...")
+        assert "## Tool: bash" in doc
+        assert long_description in doc
+        assert "# Tool Documentation" in doc
+    
+    def test_mixed_short_and_long_descriptions(self):
+        """
+        Что он делает: Проверяет обработку смешанного списка tools.
+        Цель: Убедиться, что короткие остаются, длинные переносятся.
+        """
+        print("Настройка: Два tools - короткий и длинный...")
+        short_desc = "Short description"
+        long_desc = "B" * 15000
+        tools = [
+            Tool(
+                type="function",
+                function=ToolFunction(
+                    name="short_tool",
+                    description=short_desc,
+                    parameters={}
+                )
+            ),
+            Tool(
+                type="function",
+                function=ToolFunction(
+                    name="long_tool",
+                    description=long_desc,
+                    parameters={}
+                )
+            )
+        ]
+        
+        print("Действие: Обработка tools...")
+        with patch('kiro_gateway.converters.TOOL_DESCRIPTION_MAX_LENGTH', 10000):
+            processed, doc = process_tools_with_long_descriptions(tools)
+        
+        print(f"Проверяем количество tools: Ожидалось 2, Получено {len(processed)}")
+        assert len(processed) == 2
+        
+        print(f"Проверяем короткий tool...")
+        assert processed[0].function.description == short_desc
+        
+        print(f"Проверяем длинный tool...")
+        assert "[Full documentation in system prompt" in processed[1].function.description
+        assert "## Tool: long_tool" in doc
+        assert long_desc in doc
+    
+    def test_preserves_tool_parameters(self):
+        """
+        Что он делает: Проверяет сохранение parameters при переносе description.
+        Цель: Убедиться, что parameters не теряются.
+        """
+        print("Настройка: Tool с parameters и длинным description...")
+        params = {
+            "type": "object",
+            "properties": {
+                "location": {"type": "string", "description": "City name"},
+                "units": {"type": "string", "enum": ["celsius", "fahrenheit"]}
+            },
+            "required": ["location"]
+        }
+        tools = [Tool(
+            type="function",
+            function=ToolFunction(
+                name="weather",
+                description="C" * 15000,
+                parameters=params
+            )
+        )]
+        
+        print("Действие: Обработка tools...")
+        with patch('kiro_gateway.converters.TOOL_DESCRIPTION_MAX_LENGTH', 10000):
+            processed, doc = process_tools_with_long_descriptions(tools)
+        
+        print(f"Проверяем сохранение parameters...")
+        assert processed[0].function.parameters == params
+    
+    def test_disabled_when_limit_is_zero(self):
+        """
+        Что он делает: Проверяет отключение функции при лимите 0.
+        Цель: Убедиться, что при TOOL_DESCRIPTION_MAX_LENGTH=0 tools не изменяются.
+        """
+        print("Настройка: Tool с длинным description и лимит 0...")
+        long_desc = "D" * 15000
+        tools = [Tool(
+            type="function",
+            function=ToolFunction(
+                name="test_tool",
+                description=long_desc,
+                parameters={}
+            )
+        )]
+        
+        print("Действие: Обработка tools с лимитом 0...")
+        with patch('kiro_gateway.converters.TOOL_DESCRIPTION_MAX_LENGTH', 0):
+            processed, doc = process_tools_with_long_descriptions(tools)
+        
+        print(f"Проверяем, что description не изменился...")
+        assert processed[0].function.description == long_desc
+        assert doc == ""
+    
+    def test_non_function_tools_unchanged(self):
+        """
+        Что он делает: Проверяет, что non-function tools не изменяются.
+        Цель: Убедиться, что только function tools обрабатываются.
+        """
+        print("Настройка: Tool с type != function...")
+        # Создаём tool с другим типом (хотя в реальности OpenAI поддерживает только function)
+        tools = [Tool(
+            type="other_type",
+            function=ToolFunction(
+                name="test",
+                description="E" * 15000,
+                parameters={}
+            )
+        )]
+        
+        print("Действие: Обработка tools...")
+        with patch('kiro_gateway.converters.TOOL_DESCRIPTION_MAX_LENGTH', 10000):
+            processed, doc = process_tools_with_long_descriptions(tools)
+        
+        print(f"Проверяем, что tool не изменился...")
+        assert len(processed) == 1
+        assert processed[0].type == "other_type"
+        assert doc == ""
+    
+    def test_multiple_long_descriptions_all_moved(self):
+        """
+        Что он делает: Проверяет перенос нескольких длинных descriptions.
+        Цель: Убедиться, что все длинные descriptions переносятся.
+        """
+        print("Настройка: Три tools с длинными descriptions...")
+        tools = [
+            Tool(type="function", function=ToolFunction(name="tool1", description="F" * 15000, parameters={})),
+            Tool(type="function", function=ToolFunction(name="tool2", description="G" * 15000, parameters={})),
+            Tool(type="function", function=ToolFunction(name="tool3", description="H" * 15000, parameters={}))
+        ]
+        
+        print("Действие: Обработка tools...")
+        with patch('kiro_gateway.converters.TOOL_DESCRIPTION_MAX_LENGTH', 10000):
+            processed, doc = process_tools_with_long_descriptions(tools)
+        
+        print(f"Проверяем все три tools...")
+        assert len(processed) == 3
+        for i, tool in enumerate(processed):
+            assert "[Full documentation in system prompt" in tool.function.description
+        
+        print(f"Проверяем документацию содержит все три секции...")
+        assert "## Tool: tool1" in doc
+        assert "## Tool: tool2" in doc
+        assert "## Tool: tool3" in doc
+    
+    def test_empty_description_unchanged(self):
+        """
+        Что он делает: Проверяет обработку пустого description.
+        Цель: Убедиться, что пустой description не вызывает ошибок.
+        """
+        print("Настройка: Tool с пустым description...")
+        tools = [Tool(
+            type="function",
+            function=ToolFunction(
+                name="empty_desc_tool",
+                description="",
+                parameters={}
+            )
+        )]
+        
+        print("Действие: Обработка tools...")
+        with patch('kiro_gateway.converters.TOOL_DESCRIPTION_MAX_LENGTH', 10000):
+            processed, doc = process_tools_with_long_descriptions(tools)
+        
+        print(f"Проверяем, что пустой description остался пустым...")
+        assert processed[0].function.description == ""
+        assert doc == ""
+    
+    def test_none_description_unchanged(self):
+        """
+        Что он делает: Проверяет обработку None description.
+        Цель: Убедиться, что None description не вызывает ошибок.
+        """
+        print("Настройка: Tool с None description...")
+        tools = [Tool(
+            type="function",
+            function=ToolFunction(
+                name="none_desc_tool",
+                description=None,
+                parameters={}
+            )
+        )]
+        
+        print("Действие: Обработка tools...")
+        with patch('kiro_gateway.converters.TOOL_DESCRIPTION_MAX_LENGTH', 10000):
+            processed, doc = process_tools_with_long_descriptions(tools)
+        
+        print(f"Проверяем, что None description обработан корректно...")
+        # None должен остаться None или стать пустой строкой
+        assert processed[0].function.description is None or processed[0].function.description == ""
+        assert doc == ""
+
+
 class TestBuildUserInputContext:
     """Тесты функции _build_user_input_context."""
     
@@ -628,3 +910,40 @@ class TestBuildKiroPayload:
         model_id = result["conversationState"]["currentMessage"]["userInputMessage"]["modelId"]
         # claude-sonnet-4-5 должен маппиться в CLAUDE_SONNET_4_5_20250929_V1_0
         assert model_id == "CLAUDE_SONNET_4_5_20250929_V1_0"
+    
+    def test_long_tool_description_added_to_system_prompt(self):
+        """
+        Что он делает: Проверяет интеграцию длинных tool descriptions в payload.
+        Цель: Убедиться, что длинные descriptions добавляются в system prompt в payload.
+        """
+        print("Настройка: Запрос с tool с длинным description...")
+        long_desc = "X" * 15000
+        request = ChatCompletionRequest(
+            model="claude-sonnet-4-5",
+            messages=[
+                ChatMessage(role="system", content="You are helpful"),
+                ChatMessage(role="user", content="Hello")
+            ],
+            tools=[Tool(
+                type="function",
+                function=ToolFunction(
+                    name="long_tool",
+                    description=long_desc,
+                    parameters={}
+                )
+            )]
+        )
+        
+        print("Действие: Построение payload...")
+        with patch('kiro_gateway.converters.TOOL_DESCRIPTION_MAX_LENGTH', 10000):
+            result = build_kiro_payload(request, "conv-123", "")
+        
+        print(f"Проверяем, что system prompt содержит tool documentation...")
+        current_content = result["conversationState"]["currentMessage"]["userInputMessage"]["content"]
+        assert "You are helpful" in current_content
+        assert "## Tool: long_tool" in current_content
+        assert long_desc in current_content
+        
+        print(f"Проверяем, что tool в context имеет reference description...")
+        tools_context = result["conversationState"]["currentMessage"]["userInputMessage"]["userInputMessageContext"]["tools"]
+        assert "[Full documentation in system prompt" in tools_context[0]["toolSpecification"]["description"]

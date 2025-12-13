@@ -139,6 +139,27 @@ MODEL_CACHE_TTL: int = 3600
 DEFAULT_MAX_INPUT_TOKENS: int = 200000
 
 # ==================================================================================================
+# Tool Description Handling (Kiro API Limitations)
+# ==================================================================================================
+
+# Kiro API возвращает ошибку 400 "Improperly formed request" при слишком длинных
+# описаниях инструментов в toolSpecification.description.
+#
+# Решение: Tool Documentation Reference Pattern
+# - Если description ≤ лимита → оставляем как есть
+# - Если description > лимита:
+#   * В toolSpecification.description → ссылка на system prompt:
+#     "[Full documentation in system prompt under '## Tool: {name}']"
+#   * В system prompt добавляется секция "## Tool: {name}" с полным описанием
+#
+# Модель видит явную ссылку и точно понимает, где искать полную документацию.
+
+# Максимальная длина description для tool в символах.
+# Описания длиннее этого лимита будут перенесены в system prompt.
+# Установите 0 для отключения (не рекомендуется - вызовет ошибки Kiro API).
+TOOL_DESCRIPTION_MAX_LENGTH: int = int(os.getenv("TOOL_DESCRIPTION_MAX_LENGTH", "10000"))
+
+# ==================================================================================================
 # Debug Settings
 # ==================================================================================================
 

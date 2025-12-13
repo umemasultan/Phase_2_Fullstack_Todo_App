@@ -27,12 +27,12 @@
 """
 
 import json
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional, Tuple
 
 from loguru import logger
 
-from kiro_gateway.config import get_internal_model_id
-from kiro_gateway.models import ChatMessage, ChatCompletionRequest
+from kiro_gateway.config import get_internal_model_id, TOOL_DESCRIPTION_MAX_LENGTH
+from kiro_gateway.models import ChatMessage, ChatCompletionRequest, Tool
 
 
 def extract_text_content(content: Any) -> str:
@@ -204,6 +204,91 @@ def _extract_tool_results(content: Any) -> List[Dict[str, Any]]:
     return tool_results
 
 
+def process_tools_with_long_descriptions(
+    tools: Optional[List[Tool]]
+) -> Tuple[Optional[List[Tool]], str]:
+    """
+    Обрабатывает tools с длинными descriptions.
+    
+    Kiro API имеет ограничение на длину description в toolSpecification.
+    Если description превышает лимит, полное описание переносится в system prompt,
+    а в tool остаётся ссылка на документацию.
+    
+    Args:
+        tools: Список инструментов из запроса OpenAI
+    
+    Returns:
+        Tuple из:
+        - Список tools с обработанными descriptions (или None если tools пуст)
+        - Строка с документацией для добавления в system prompt (пустая если все descriptions короткие)
+    
+    Example:
+        >>> tools = [Tool(type="function", function=ToolFunction(name="bash", description="Very long..."))]
+        >>> processed_tools, doc = process_tools_with_long_descriptions(tools)
+        >>> "## Tool: bash" in doc
+        True
+    """
+    if not tools:
+        return None, ""
+    
+    # Если лимит отключен (0), возвращаем tools без изменений
+    if TOOL_DESCRIPTION_MAX_LENGTH <= 0:
+        return tools, ""
+    
+    tool_documentation_parts = []
+    processed_tools = []
+    
+    for tool in tools:
+        if tool.type != "function":
+            processed_tools.append(tool)
+            continue
+        
+        description = tool.function.description or ""
+        
+        if len(description) <= TOOL_DESCRIPTION_MAX_LENGTH:
+            # Description короткий - оставляем как есть
+            processed_tools.append(tool)
+        else:
+            # Description слишком длинный - переносим в system prompt
+            tool_name = tool.function.name
+            
+            logger.info(
+                f"Tool '{tool_name}' has long description ({len(description)} chars > {TOOL_DESCRIPTION_MAX_LENGTH}), "
+                f"moving to system prompt"
+            )
+            
+            # Создаём документацию для system prompt
+            tool_documentation_parts.append(f"## Tool: {tool_name}\n\n{description}")
+            
+            # Создаём копию tool с reference description
+            # Используем модель Tool для создания новой копии
+            from kiro_gateway.models import ToolFunction
+            
+            reference_description = f"[Full documentation in system prompt under '## Tool: {tool_name}']"
+            
+            processed_tool = Tool(
+                type=tool.type,
+                function=ToolFunction(
+                    name=tool.function.name,
+                    description=reference_description,
+                    parameters=tool.function.parameters
+                )
+            )
+            processed_tools.append(processed_tool)
+    
+    # Формируем итоговую документацию
+    tool_documentation = ""
+    if tool_documentation_parts:
+        tool_documentation = (
+            "\n\n---\n"
+            "# Tool Documentation\n"
+            "The following tools have detailed documentation that couldn't fit in the tool definition.\n\n"
+            + "\n\n---\n\n".join(tool_documentation_parts)
+        )
+    
+    return processed_tools if processed_tools else None, tool_documentation
+
+
 def _extract_tool_uses(msg: ChatMessage) -> List[Dict[str, Any]]:
     """
     Извлекает tool uses из сообщения assistant.
@@ -250,8 +335,11 @@ def build_kiro_payload(
     Включает:
     - Полную историю сообщений
     - System prompt (добавляется к первому user сообщению)
-    - Tools definitions
+    - Tools definitions (с обработкой длинных descriptions)
     - Текущее сообщение
+    
+    Если tools содержат слишком длинные descriptions, они автоматически
+    переносятся в system prompt, а в tool остаётся ссылка на документацию.
     
     Args:
         request_data: Запрос в формате OpenAI
@@ -266,6 +354,9 @@ def build_kiro_payload(
     """
     messages = list(request_data.messages)
     
+    # Обрабатываем tools с длинными descriptions
+    processed_tools, tool_documentation = process_tools_with_long_descriptions(request_data.tools)
+    
     # Извлекаем system prompt
     system_prompt = ""
     non_system_messages = []
@@ -275,6 +366,10 @@ def build_kiro_payload(
         else:
             non_system_messages.append(msg)
     system_prompt = system_prompt.strip()
+    
+    # Добавляем документацию по tools в system prompt если есть
+    if tool_documentation:
+        system_prompt = system_prompt + tool_documentation if system_prompt else tool_documentation.strip()
     
     # Объединяем соседние сообщения с одинаковой ролью
     merged_messages = merge_adjacent_messages(non_system_messages)
@@ -327,7 +422,8 @@ def build_kiro_payload(
     }
     
     # Добавляем tools и tool_results если есть
-    user_input_context = _build_user_input_context(request_data, current_message)
+    # Используем обработанные tools (с короткими descriptions)
+    user_input_context = _build_user_input_context(request_data, current_message, processed_tools)
     if user_input_context:
         user_input_message["userInputMessageContext"] = user_input_context
     
@@ -355,7 +451,8 @@ def build_kiro_payload(
 
 def _build_user_input_context(
     request_data: ChatCompletionRequest,
-    current_message: ChatMessage
+    current_message: ChatMessage,
+    processed_tools: Optional[List[Tool]] = None
 ) -> Dict[str, Any]:
     """
     Строит userInputMessageContext для текущего сообщения.
@@ -365,16 +462,21 @@ def _build_user_input_context(
     Args:
         request_data: Запрос с tools
         current_message: Текущее сообщение
+        processed_tools: Обработанные tools с короткими descriptions (опционально).
+                        Если None, используются tools из request_data.
     
     Returns:
         Словарь с контекстом или пустой словарь
     """
     context = {}
     
+    # Используем обработанные tools если переданы, иначе оригинальные
+    tools_to_use = processed_tools if processed_tools is not None else request_data.tools
+    
     # Добавляем tools если есть
-    if request_data.tools:
+    if tools_to_use:
         tools_list = []
-        for tool in request_data.tools:
+        for tool in tools_to_use:
             if tool.type == "function":
                 tools_list.append({
                     "toolSpecification": {
