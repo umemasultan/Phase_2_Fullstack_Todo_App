@@ -47,6 +47,7 @@ server.log
 _notes/
 requests/
 nul
+history/
 
 # Testing
 .pytest_cache/
