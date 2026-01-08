@@ -1,11 +1,5 @@
 {
   "buildCommand": "cd frontend && npm install && npm run build",
   "outputDirectory": "frontend/out",
-  "installCommand": "npm install --prefix frontend",
-  "framework": null,
-  "functions": {
-    "api/**/*.py": {
-      "runtime": "python3.9"
-    }
-  }
+  "installCommand": "npm install --prefix frontend"
 }
