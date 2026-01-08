@@ -307,7 +307,6 @@ if __name__ == "__main__":
     # Use string reference to avoid double module import
     uvicorn.run(
         "main:app",
-        host="0.0.0.0",
         port=8000,
         log_config=UVICORN_LOG_CONFIG,
     )

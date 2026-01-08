@@ -1,0 +1,82 @@
+# Spec-Kit Plus Configuration
+# Project: hackathon-todo
+# Type: Monorepo (Full-stack Todo Application)
+
+project:
+  name: hackathon-todo
+  type: monorepo
+  version: 0.1.0
+  description: Full-stack Todo application with frontend and backend workspaces
+
+# Monorepo workspace configuration
+workspaces:
+  - name: frontend
+    path: ./frontend
+    type: web-app
+    description: Frontend React/Vue application
+
+  - name: backend
+    path: ./backend
+    type: api-service
+    description: Backend API service
+
+# Spec-Kit Plus conventions
+conventions:
+  specs_dir: ./specs
+  features_dir: ./specs/features
+  api_dir: ./specs/api
+  database_dir: ./specs/database
+  ui_dir: ./specs/ui
+
+  # History and documentation
+  history_dir: ./history
+  prompts_dir: ./history/prompts
+  adr_dir: ./history/adr
+
+  # Templates
+  templates_dir: ./.specify/templates
+
+  # Memory and constitution
+  memory_dir: ./.specify/memory
+  constitution_file: ./.specify/memory/constitution.md
+
+# Development workflow
+workflow:
+  stages:
+    - constitution
+    - spec
+    - plan
+    - tasks
+    - red
+    - green
+    - refactor
+    - explainer
+
+  # PHR (Prompt History Record) settings
+  phr:
+    enabled: true
+    auto_create: true
+    template: ./.specify/templates/phr-template.prompt.md
+
+  # ADR (Architecture Decision Record) settings
+  adr:
+    enabled: true
+    suggest_on_plan: true
+    template: ./.specify/templates/adr-template.md
+
+# Quality gates
+quality:
+  require_tests: true
+  require_docs: true
+  code_review: true
+
+# Integration settings
+integrations:
+  git:
+    enabled: true
+    branch_prefix: feature/
+    commit_template: conventional
+
+  ci_cd:
+    enabled: false
+    provider: github-actions
