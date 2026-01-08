@@ -1,427 +1,275 @@
-<div align="center">
+# 📝 Full-Stack Todo Application
 
-# 🚀 Kiro Gateway
+A modern, production-ready Todo application built with Next.js and FastAPI, featuring a clean and professional UI inspired by Notion, Linear, and Asana.
 
-**OpenAI-compatible proxy gateway for Kiro IDE API (AWS CodeWhisperer)**
-
-[![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-green.svg)](https://fastapi.tiangolo.com/)
-
-*Use Claude models through any tools that support the OpenAI API*
-
-[Features](#-features) • [Quick Start](#-quick-start) • [Configuration](#%EF%B8%8F-configuration) • [API Reference](#-api-reference) • [License](#-license)
-
-</div>
-
----
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Next.js](https://img.shields.io/badge/Next.js-14-black)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-green)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)
 
 ## ✨ Features
 
-| Feature | Description |
-|---------|-------------|
-| 🔌 **OpenAI-compatible API** | Works with any OpenAI client out of the box |
-| 🧠 **Extended Thinking** | See how the model reasons before answering |
-| 💬 **Full message history** | Passes complete conversation context |
-| 🛠️ **Tool Calling** | Supports function calling in OpenAI format |
-| 📡 **Streaming** | Full SSE streaming support |
-| 🔄 **Retry Logic** | Automatic retries on errors (403, 429, 5xx) |
-| 📋 **Extended model list** | Including versioned models |
-| 🔐 **Smart token management** | Automatic refresh before expiration |
+### Frontend
+- 🎨 **Clean, Modern UI** - Professional SaaS-style design with Tailwind CSS
+- 📱 **Fully Responsive** - Mobile-first design that works on all devices
+- 🔐 **JWT Authentication** - Secure user authentication with React Context
+- ✅ **Task Management** - Create, read, update, delete, and toggle task completion
+- 🔍 **Task Filtering** - Filter tasks by all, active, or completed status
+- 📊 **Statistics Dashboard** - View total, active, and completed task counts
+- ⚡ **Fast & Optimized** - Built with Next.js 14 App Router and static export
 
----
+### Backend
+- 🚀 **FastAPI** - High-performance Python web framework
+- 🗄️ **SQLite Database** - Lightweight database with SQLAlchemy ORM
+- 🔒 **Secure Authentication** - JWT tokens with bcrypt password hashing
+- 📡 **RESTful API** - Clean API design with proper HTTP methods
+- 🌐 **CORS Enabled** - Configured for frontend integration
+- 📦 **Static File Serving** - Serves the frontend from the same server
+
+## 🛠️ Tech Stack
+
+### Frontend
+- **Framework**: Next.js 14 (App Router)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS
+- **State Management**: React Context API
+- **HTTP Client**: Native Fetch API
+
+### Backend
+- **Framework**: FastAPI
+- **Language**: Python 3.10+
+- **Database**: SQLite with SQLAlchemy ORM
+- **Authentication**: JWT with bcrypt
+- **Validation**: Pydantic
+
+## 📋 Prerequisites
+
+- **Node.js** 18+ and npm
+- **Python** 3.10+
+- **Git**
 
 ## 🚀 Quick Start
 
-### Prerequisites
-
-- Python 3.10+
-- One of the following:
-  - [Kiro IDE](https://kiro.dev/) with logged in account, OR
-  - [Kiro CLI](https://kiro.dev/cli/) with AWS SSO (Builder ID)
-
-### Installation
+### 1. Clone the Repository
 
 ```bash
-# Clone the repository
-git clone https://github.com/Jwadow/kiro-gateway.git
-cd kiro-gateway
+git clone https://github.com/umemasultan/Phase_2_Fullstack_Todo_App.git
+cd Phase_2_Fullstack_Todo_App
+```
+
+### 2. Backend Setup
+
+```bash
+# Navigate to backend directory
+cd backend
+
+# Create virtual environment (optional but recommended)
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
 
-# Configure (see Configuration section)
+# Create .env file from example
 cp .env.example .env
-# Edit .env with your credentials
 
-# Start the server
+# The backend will automatically create the SQLite database on first run
+```
+
+### 3. Frontend Setup
+
+```bash
+# Navigate to frontend directory
+cd ../frontend
+
+# Install dependencies
+npm install
+
+# Create .env.local file from example
+cp .env.local.example .env.local
+
+# Build the frontend
+npm run build
+```
+
+### 4. Deploy Frontend to Backend
+
+```bash
+# Copy built frontend to backend static directory
+# On Windows (PowerShell):
+Copy-Item -Path "frontend\out\*" -Destination "backend\static" -Recurse -Force
+
+# On Linux/Mac:
+cp -r frontend/out/* backend/static/
+```
+
+### 5. Run the Application
+
+```bash
+# From the backend directory
+cd backend
 python main.py
 ```
 
-The server will be available at `http://localhost:8000`
+The application will be available at: **http://localhost:8002**
 
----
+## 📁 Project Structure
 
-## ⚙️ Configuration
+```
+Phase_2_Fullstack_Todo_App/
+├── backend/
+│   ├── src/
+│   │   ├── api/          # API routes and schemas
+│   │   ├── core/         # Core configuration and utilities
+│   │   ├── models/       # Database models
+│   │   └── services/     # Business logic
+│   ├── static/           # Frontend build output (generated)
+│   ├── main.py           # Application entry point
+│   └── requirements.txt  # Python dependencies
+├── frontend/
+│   ├── src/
+│   │   ├── app/          # Next.js pages and layouts
+│   │   ├── components/   # React components
+│   │   ├── lib/          # Utilities and API client
+│   │   └── types/        # TypeScript types
+│   ├── package.json      # Node.js dependencies
+│   └── tailwind.config.js # Tailwind configuration
+├── specs/                # API and database specifications
+└── README.md
+```
 
-### Option 1: JSON Credentials File
+## 🔑 Environment Variables
 
-Specify the path to the credentials file:
+### Backend (.env)
 
 ```env
-KIRO_CREDS_FILE="~/.aws/sso/cache/kiro-auth-token.json"
+# Database
+DATABASE_URL=sqlite:///./todo.db
 
-# Password to protect YOUR proxy server (make up any secure string)
-# You'll use this as api_key when connecting to your gateway
-PROXY_API_KEY="my-super-secret-password-123"
+# JWT Configuration
+SECRET_KEY=your-secret-key-here-change-in-production
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+
+# CORS
+CORS_ORIGINS=http://localhost:3000,http://localhost:8002
+
+# Server
+HOST=0.0.0.0
+PORT=8002
 ```
 
-<details>
-<summary>📄 JSON file format</summary>
-
-```json
-{
-  "accessToken": "eyJ...",
-  "refreshToken": "eyJ...",
-  "expiresAt": "2025-01-12T23:00:00.000Z",
-  "profileArn": "arn:aws:codewhisperer:us-east-1:...",
-  "region": "us-east-1"
-}
-```
-
-</details>
-
-### Option 2: Environment Variables (.env file)
-
-Create a `.env` file in the project root:
+### Frontend (.env.local)
 
 ```env
-# Required
-REFRESH_TOKEN="your_kiro_refresh_token"
-
-# Password to protect YOUR proxy server (make up any secure string)
-PROXY_API_KEY="my-super-secret-password-123"
-
-# Optional
-PROFILE_ARN="arn:aws:codewhisperer:us-east-1:..."
-KIRO_REGION="us-east-1"
+NEXT_PUBLIC_API_URL=http://localhost:8002
 ```
 
-### Option 3: AWS SSO Credentials (kiro-cli)
+## 📡 API Endpoints
 
-If you use `kiro-cli` with AWS IAM Identity Center (SSO), the gateway will automatically detect and use AWS SSO OIDC authentication.
+### Authentication
 
-```env
-KIRO_CREDS_FILE="~/.aws/sso/cache/your-sso-cache-file.json"
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/v1/auth/signup` | Register a new user |
+| POST | `/api/v1/auth/signin` | Login and get JWT token |
+| GET | `/api/v1/auth/me` | Get current user info |
 
-# Password to protect YOUR proxy server
-PROXY_API_KEY="my-super-secret-password-123"
+### Tasks
 
-# Note: PROFILE_ARN is NOT needed for AWS SSO OIDC (Builder ID) users
-# The gateway will work without it
-```
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/{user_id}/tasks` | Get all tasks for user |
+| POST | `/api/{user_id}/tasks` | Create a new task |
+| PUT | `/api/{user_id}/tasks/{task_id}` | Update a task |
+| PATCH | `/api/{user_id}/tasks/{task_id}/complete` | Toggle task completion |
+| DELETE | `/api/{user_id}/tasks/{task_id}` | Delete a task |
 
-<details>
-<summary>📄 AWS SSO JSON file format</summary>
+### Health Check
 
-AWS SSO credentials files (from `~/.aws/sso/cache/`) contain:
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/health` | Check API health status |
 
-```json
-{
-  "accessToken": "eyJ...",
-  "refreshToken": "eyJ...",
-  "expiresAt": "2025-01-12T23:00:00.000Z",
-  "region": "us-east-1",
-  "clientId": "...",
-  "clientSecret": "..."
-}
-```
+## 🎨 UI Features
 
-**Note:** AWS SSO OIDC (Builder ID) users do NOT need `profileArn`. The gateway will work without it (if specified, it will be ignored).
+- **Clean Design**: Minimal, professional interface with consistent spacing and typography
+- **Task Cards**: Clean cards with hover effects for edit/delete actions
+- **Filter Buttons**: Simple toggle buttons for filtering tasks
+- **Statistics**: Dashboard showing total, active, and completed task counts
+- **Responsive Layout**: Works seamlessly on mobile, tablet, and desktop
+- **Loading States**: Smooth loading indicators for all async operations
+- **Error Handling**: User-friendly error messages
 
-</details>
+## 🔒 Security Features
 
-<details>
-<summary>🔍 How it works</summary>
+- **Password Hashing**: Bcrypt for secure password storage
+- **JWT Tokens**: Secure authentication with HTTP-only cookies
+- **CORS Protection**: Configured allowed origins
+- **Input Validation**: Pydantic schemas for request validation
+- **SQL Injection Prevention**: SQLAlchemy ORM with parameterized queries
 
-The gateway automatically detects the authentication type based on the credentials file:
+## 🧪 Development
 
-- **Kiro Desktop Auth** (default): Used when `clientId` and `clientSecret` are NOT present
-  - Endpoint: `https://prod.{region}.auth.desktop.kiro.dev/refreshToken`
-  
-- **AWS SSO OIDC**: Used when `clientId` and `clientSecret` ARE present
-  - Endpoint: `https://oidc.{region}.amazonaws.com/token`
-
-No additional configuration is needed — just point to your credentials file!
-
-</details>
-
-### Option 4: kiro-cli SQLite Database
-
-If you use `kiro-cli` and prefer to use its SQLite database directly:
-
-```env
-KIRO_CLI_DB_FILE="~/.local/share/kiro-cli/data.sqlite3"
-
-# Password to protect YOUR proxy server
-PROXY_API_KEY="my-super-secret-password-123"
-
-# Note: PROFILE_ARN is NOT needed for AWS SSO OIDC (Builder ID) users
-# The gateway will work without it
-```
-
-<details>
-<summary>📄 Database locations</summary>
-
-| CLI Tool | Database Path |
-|----------|---------------|
-| kiro-cli | `~/.local/share/kiro-cli/data.sqlite3` |
-| amazon-q-developer-cli | `~/.local/share/amazon-q/data.sqlite3` |
-
-The gateway reads credentials from the `auth_kv` table which stores:
-- `kirocli:odic:token` or `codewhisperer:odic:token` — access token, refresh token, expiration
-- `kirocli:odic:device-registration` or `codewhisperer:odic:device-registration` — client ID and secret
-
-Both key formats are supported for compatibility with different kiro-cli versions.
-
-</details>
-
-### Getting Credentials
-
-**For Kiro IDE users:**
-- Log in to Kiro IDE and use Option 1 above (JSON credentials file)
-- The credentials file is created automatically after login
-
-**For Kiro CLI users:**
-- Log in with `kiro-cli login` and use Option 3 or Option 4 above
-- No manual token extraction needed!
-
-<details>
-<summary>🔧 Advanced: Manual token extraction</summary>
-
-If you need to manually extract the refresh token (e.g., for debugging), you can intercept Kiro IDE traffic:
-- Look for requests to: `prod.us-east-1.auth.desktop.kiro.dev/refreshToken`
-
-</details>
-
----
-
-## 📡 API Reference
-
-### Endpoints
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/` | GET | Health check |
-| `/health` | GET | Detailed health check |
-| `/v1/models` | GET | List available models |
-| `/v1/chat/completions` | POST | Chat completions |
-
-### Available Models
-
-| Model | Description |
-|-------|-------------|
-| `claude-opus-4-5` | Top-tier model |
-| `claude-opus-4-5-20251101` | Top-tier model (versioned) |
-| `claude-sonnet-4-5` | Enhanced model |
-| `claude-sonnet-4-5-20250929` | Enhanced model (versioned) |
-| `claude-sonnet-4` | Balanced model |
-| `claude-sonnet-4-20250514` | Balanced model (versioned) |
-| `claude-haiku-4-5` | Fast model |
-| `claude-3-7-sonnet-20250219` | Legacy model |
-
----
-
-## 💡 Usage Examples
-
-<details>
-<summary>🔹 Simple cURL Request</summary>
+### Frontend Development
 
 ```bash
-curl http://localhost:8000/v1/chat/completions \
-  -H "Authorization: Bearer my-super-secret-password-123" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "claude-sonnet-4-5",
-    "messages": [{"role": "user", "content": "Hello!"}],
-    "stream": true
-  }'
+cd frontend
+npm run dev  # Runs on http://localhost:3000
 ```
 
-> **Note:** Replace `my-super-secret-password-123` with the `PROXY_API_KEY` you set in your `.env` file.
-
-</details>
-
-<details>
-<summary>🔹 Streaming Request</summary>
+### Backend Development
 
 ```bash
-curl http://localhost:8000/v1/chat/completions \
-  -H "Authorization: Bearer my-super-secret-password-123" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "claude-sonnet-4-5",
-    "messages": [
-      {"role": "system", "content": "You are a helpful assistant."},
-      {"role": "user", "content": "What is 2+2?"}
-    ],
-    "stream": true
-  }'
+cd backend
+uvicorn main:app --reload --port 8002
 ```
 
-</details>
-
-<details>
-<summary>🔹 With Tool Calling</summary>
+### Building for Production
 
 ```bash
-curl http://localhost:8000/v1/chat/completions \
-  -H "Authorization: Bearer my-super-secret-password-123" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "claude-sonnet-4-5",
-    "messages": [{"role": "user", "content": "What is the weather in London?"}],
-    "tools": [{
-      "type": "function",
-      "function": {
-        "name": "get_weather",
-        "description": "Get weather for a location",
-        "parameters": {
-          "type": "object",
-          "properties": {
-            "location": {"type": "string", "description": "City name"}
-          },
-          "required": ["location"]
-        }
-      }
-    }]
-  }'
+# Build frontend
+cd frontend
+npm run build
+
+# Copy to backend
+cp -r out/* ../backend/static/
+
+# Run backend
+cd ../backend
+python main.py
 ```
 
-</details>
+## 📝 API Documentation
 
-<details>
-<summary>🐍 Python OpenAI SDK</summary>
+Once the backend is running, visit:
+- **Swagger UI**: http://localhost:8002/docs
+- **ReDoc**: http://localhost:8002/redoc
 
-```python
-from openai import OpenAI
+## 🤝 Contributing
 
-client = OpenAI(
-    base_url="http://localhost:8000/v1",
-    api_key="my-super-secret-password-123"  # Your PROXY_API_KEY from .env
-)
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-response = client.chat.completions.create(
-    model="claude-sonnet-4-5",
-    messages=[
-        {"role": "system", "content": "You are a helpful assistant."},
-        {"role": "user", "content": "Hello!"}
-    ],
-    stream=True
-)
+## 📄 License
 
-for chunk in response:
-    if chunk.choices[0].delta.content:
-        print(chunk.choices[0].delta.content, end="")
-```
-
-</details>
-
-<details>
-<summary>🦜 LangChain</summary>
-
-```python
-from langchain_openai import ChatOpenAI
-
-llm = ChatOpenAI(
-    base_url="http://localhost:8000/v1",
-    api_key="my-super-secret-password-123",  # Your PROXY_API_KEY from .env
-    model="claude-sonnet-4-5"
-)
-
-response = llm.invoke("Hello, how are you?")
-print(response.content)
-```
-
-</details>
-
----
-
-## 🔧 Debugging
-
-Debug logging is **disabled by default**. To enable, add to your `.env`:
-
-```env
-# Debug logging mode:
-# - off: disabled (default)
-# - errors: save logs only for failed requests (4xx, 5xx) - recommended for troubleshooting
-# - all: save logs for every request (overwrites on each request)
-DEBUG_MODE=errors
-```
-
-### Debug Modes
-
-| Mode | Description | Use Case |
-|------|-------------|----------|
-| `off` | Disabled (default) | Production |
-| `errors` | Save logs only for failed requests (4xx, 5xx) | **Recommended for troubleshooting** |
-| `all` | Save logs for every request | Development/debugging |
-
-### Debug Files
-
-When enabled, requests are logged to the `debug_logs/` folder:
-
-| File | Description |
-|------|-------------|
-| `request_body.json` | Incoming request from client (OpenAI format) |
-| `kiro_request_body.json` | Request sent to Kiro API |
-| `response_stream_raw.txt` | Raw stream from Kiro |
-| `response_stream_modified.txt` | Transformed stream (OpenAI format) |
-| `app_logs.txt` | Application logs for the request |
-| `error_info.json` | Error details (only on errors) |
-
----
-
-## 📜 License
-
-This project is licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**.
-
-This means:
-- ✅ You can use, modify, and distribute this software
-- ✅ You can use it for commercial purposes
-- ⚠️ **You must disclose source code** when you distribute the software
-- ⚠️ **Network use is distribution** — if you run a modified version on a server and let others interact with it, you must make the source code available to them
-- ⚠️ Modifications must be released under the same license
-
-See the [LICENSE](LICENSE) file for the full license text.
-
-### Why AGPL-3.0?
-
-AGPL-3.0 ensures that improvements to this software benefit the entire community. If you modify this gateway and deploy it as a service, you must share your improvements with your users.
-
-### Contributor License Agreement (CLA)
-
-By submitting a contribution to this project, you agree to the terms of our [Contributor License Agreement (CLA)](CLA.md). This ensures that:
-- You have the right to submit the contribution
-- You grant the maintainer rights to use and relicense your contribution
-- The project remains legally protected
-
----
+This project is open source and available under the MIT License.
 
 ## 👤 Author
 
-**Jwadow** — [@Jwadow](https://github.com/jwadow)
+**Umema Sultan**
 
----
+- LinkedIn: [umema-sultan](https://www.linkedin.com/in/umema-sultan)
+- GitHub: [@umemasultan](https://github.com/umemasultan)
+- TikTok: [@codedremer](https://www.tiktok.com/@codedremer)
+- WhatsApp Channel: [Join](https://whatsapp.com/channel/0029VajhSWv77qVa4QVQJX3u)
 
-## ⚠️ Disclaimer
+## 🙏 Acknowledgments
 
-This project is not affiliated with, endorsed by, or sponsored by Amazon Web Services (AWS), Anthropic, or Kiro IDE. Use at your own risk and in compliance with the terms of service of the underlying APIs.
+Built with ❤️ using Next.js, FastAPI, and SQLite.
 
 ---
 
 <div align="center">
-
-**[⬆ Back to Top](#-kiro-gateway)**
-
+  <p>Made for Hackathon Submission</p>
+  <p>© 2026 Umema Sultan. All rights reserved.</p>
 </div>
