@@ -3,8 +3,8 @@ import { AuthProvider } from '@/lib/auth-context'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Hackathon Todo',
-  description: 'A full-stack todo application',
+  title: 'TodoApp - Full-Stack Todo Application',
+  description: 'A production-ready, spec-driven full-stack application built with FastAPI, Next.js, PostgreSQL, and JWT authentication.',
 }
 
 export default function RootLayout({

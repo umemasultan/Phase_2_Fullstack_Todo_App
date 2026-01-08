@@ -35,11 +35,11 @@ export default function TaskForm({ onSubmit, onCancel }: TaskFormProps) {
   }
 
   return (
-    <div className="card p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Add New Task</h3>
-      <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-2xl p-6 shadow-xl">
+      <h3 className="text-xl font-bold text-white mb-6">Add New Task</h3>
+      <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="title" className="block text-sm font-medium text-gray-300 mb-2">
             Title
           </label>
           <input
@@ -47,7 +47,7 @@ export default function TaskForm({ onSubmit, onCancel }: TaskFormProps) {
             id="title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="input-field"
+            className="w-full px-4 py-3 bg-gray-900/50 border border-gray-600 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             placeholder="What needs to be done?"
             disabled={isLoading}
             required
@@ -55,14 +55,14 @@ export default function TaskForm({ onSubmit, onCancel }: TaskFormProps) {
         </div>
 
         <div>
-          <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="description" className="block text-sm font-medium text-gray-300 mb-2">
             Description (optional)
           </label>
           <textarea
             id="description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="input-field resize-none"
+            className="w-full px-4 py-3 bg-gray-900/50 border border-gray-600 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
             placeholder="Add more details..."
             rows={3}
             disabled={isLoading}
@@ -70,8 +70,8 @@ export default function TaskForm({ onSubmit, onCancel }: TaskFormProps) {
         </div>
 
         {error && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-800">{error}</p>
+          <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl">
+            <p className="text-sm text-red-400">{error}</p>
           </div>
         )}
 
@@ -79,7 +79,7 @@ export default function TaskForm({ onSubmit, onCancel }: TaskFormProps) {
           <button
             type="submit"
             disabled={isLoading}
-            className="btn-primary flex-1"
+            className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? 'Creating...' : 'Create Task'}
           </button>
@@ -87,7 +87,7 @@ export default function TaskForm({ onSubmit, onCancel }: TaskFormProps) {
             type="button"
             onClick={onCancel}
             disabled={isLoading}
-            className="btn-secondary"
+            className="px-6 py-3 bg-gray-800/50 text-gray-300 border border-gray-700 rounded-xl font-medium hover:bg-gray-800 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Cancel
           </button>
