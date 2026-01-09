@@ -1,0 +1,69 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Dependencies
+node_modules/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Build outputs
+.next/
+out/
+dist/
+build/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+backend/.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+server.log
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+hackathon_todo.db
+
+# Testing
+coverage/
+.pytest_cache/
+.coverage
+
+# Documentation
+docs/
+*.md
+!README_HF.md
+
+# Misc
+.clabot
+history/
+specs/
+tests/
+backend/tests/
+frontend/tests/
+*.backup
+vercel.json.backup

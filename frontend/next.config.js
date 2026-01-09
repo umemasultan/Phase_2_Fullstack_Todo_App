@@ -1,12 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  output: 'export',
-  distDir: 'out',
   images: {
     unoptimized: true,
   },
-  trailingSlash: true,
+  // Standalone output for Docker deployment
+  output: 'standalone',
 }
 
 module.exports = nextConfig
